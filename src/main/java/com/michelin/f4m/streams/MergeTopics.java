@@ -39,18 +39,14 @@ public class MergeTopics {
         logger.info("Starting stream ...");
 
         Properties props = getProperties();
-
-        String sourceTopicPattern = "^streams-plaintext-input.*$";
-        if (sourceTopicPattern==null || "".equals(sourceTopicPattern))
-            throw new IllegalArgumentException("Parameter sourceTopicPattern must be set, and must contains at least 2 topic names");
+        String sourceTopicPattern = System.getenv("SOURCE_TOPIC_PATTERN");
+        if (sourceTopicPattern==null || "".equals(sourceTopicPattern)) throw new IllegalArgumentException("Parameter SOURCE_TOPIC_PATTERN must be set, and must contains at least 2 topic names");
 
         String[] sourceTopics = GetSourceTopics(props,sourceTopicPattern);
-        if (sourceTopics==null || sourceTopics.length <= 1)
-            throw new IllegalArgumentException("Parameter sourceTopics must be set, and must contains at least 2 topic names");
+        if (sourceTopics==null || sourceTopics.length <= 1) throw new IllegalArgumentException("Parameter sourceTopics must be set, and must contains at least 2 topic names");
 
-        String targetTopics = "streams-wordcount-output";
-        if (targetTopics==null || "".equals(targetTopics))
-            throw new IllegalArgumentException("Parameter targetTopic must be set, and must contains at least 2 topic names");
+        String targetTopic = System.getenv("TARGET_TOPIC");
+        if (targetTopic==null || "".equals(targetTopic)) throw new IllegalArgumentException("Parameter TARGET_TOPIC must be set, and must contains at least 2 topic names");
 
         final StreamsBuilder builder = new StreamsBuilder();
         KStream<Byte[], Byte[]> stream = builder.stream(sourceTopics[0]);
@@ -59,14 +55,13 @@ public class MergeTopics {
             KStream<Byte[], Byte[]> streamToMerge = builder.stream(sourceTopics[i]);
             stream = stream.merge(streamToMerge);
         }
-        stream.to(targetTopics);
+        stream.to(targetTopic);
 
         final Topology topology = builder.build();
         logger.info("Topology : " + topology.describe());
 
         final KafkaStreams streams = new KafkaStreams(topology, props);
         final CountDownLatch latch = new CountDownLatch(1);
-
         // attach shutdown handler to catch control-c
         Runtime.getRuntime().addShutdownHook(new Thread("streams-shutdown-hook") {
             @Override
