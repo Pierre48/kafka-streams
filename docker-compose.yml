@@ -75,6 +75,16 @@
           CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
           CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
 
+      mergetopic:
+#        image: f4m/kafka-stream-merge-topic
+        build:
+          context: .
+          dockerfile: Dockerfile
+        environment:
+          SOURCE_TOPIC_PATTERN: "test-.*"
+          TARGET_TOPIC: test
+          APPLICATION_ID_CONFIG: "test-docker-compose"
+          BOOTSTRAP_SERVERS_CONFIG: "broker:29092"
 
       akhq:
         image: tchiotludo/akhq
@@ -95,4 +105,5 @@
         links:
           - broker
           - schema-registry
+
                   

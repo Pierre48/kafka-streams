@@ -33,21 +33,17 @@ import java.util.regex.Pattern;
 /**
  * This Kafka stream allows to merge event comming from several topics in one target topic
  */
-public class MergeTopics {
-    final static Logger logger = LoggerFactory.getLogger(MergeTopics.class);
+public class MergeTopics extends StreamBase {
+    private final static Logger logger = LoggerFactory.getLogger(MergeTopics.class);
+    private static String[] sourceTopics;
+    private static String targetTopic;
+    private static Properties streamProps;
+
     public static void main(String[] args) {
         logger.info("Starting stream ...");
 
-        Properties props = getProperties();
-        String sourceTopicPattern = System.getenv("SOURCE_TOPIC_PATTERN");
-        if (sourceTopicPattern==null || "".equals(sourceTopicPattern)) throw new IllegalArgumentException("Parameter SOURCE_TOPIC_PATTERN must be set, and must contains at least 2 topic names");
-
-        String[] sourceTopics = GetSourceTopics(props,sourceTopicPattern);
-        if (sourceTopics==null || sourceTopics.length <= 1) throw new IllegalArgumentException("Parameter sourceTopics must be set, and must contains at least 2 topic names");
-
-        String targetTopic = System.getenv("TARGET_TOPIC");
-        if (targetTopic==null || "".equals(targetTopic)) throw new IllegalArgumentException("Parameter TARGET_TOPIC must be set, and must contains at least 2 topic names");
-
+        getInputParameters();
+    
         final StreamsBuilder builder = new StreamsBuilder();
         KStream<Byte[], Byte[]> stream = builder.stream(sourceTopics[0]);
         for (int i = 1; i < sourceTopics.length; i++) {
@@ -60,7 +56,7 @@ public class MergeTopics {
         final Topology topology = builder.build();
         logger.info("Topology : " + topology.describe());
 
-        final KafkaStreams streams = new KafkaStreams(topology, props);
+        final KafkaStreams streams = new KafkaStreams(topology, streamProps);
         final CountDownLatch latch = new CountDownLatch(1);
         // attach shutdown handler to catch control-c
         Runtime.getRuntime().addShutdownHook(new Thread("streams-shutdown-hook") {
@@ -80,19 +76,30 @@ public class MergeTopics {
         System.exit(0);
     }
 
-    /**
-     * Return properties to connect to a kafka cluster
-     * @return List of properties
-     */
-    private static Properties getProperties() {
-        Properties props = new Properties();
-        props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "streams-wordcount");
-        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
-        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
-        return props;
+    private static void getInputParameters() {
+        streamProps = new Properties();
+        streamProps.put(StreamsConfig.APPLICATION_ID_CONFIG, getEnvValue("APPLICATION_ID_CONFIG","sample-stream-merge-topics"));
+        streamProps.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, getEnvValue("BOOTSTRAP_SERVERS_CONFIG","localhost:9092"));
+//        streamProps.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, getEnvValue("DEFAULT_KEY_SERDE_CLASS_CONFIG",Serdes.String().getClass().toString()));
+//        streamProps.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, getEnvValue("DEFAULT_VALUE_SERDE_CLASS_CONFIG",Serdes.String().getClass().toString()));
+
+        Properties kafkaProps = new Properties();
+        kafkaProps.put(StreamsConfig.APPLICATION_ID_CONFIG, getEnvValue("APPLICATION_ID_CONFIG","sample-stream-merge-topics"));
+        kafkaProps.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, getEnvValue("BOOTSTRAP_SERVERS_CONFIG","localhost:9092"));
+        kafkaProps.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+        kafkaProps.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+
+        String sourceTopicPattern = getEnvValue("SOURCE_TOPIC_PATTERN",null);
+        if (sourceTopicPattern==null || "".equals(sourceTopicPattern)) throw new IllegalArgumentException("Parameter SOURCE_TOPIC_PATTERN must be set");
+
+        sourceTopics = getSourceTopics(kafkaProps,sourceTopicPattern);
+        if (sourceTopics==null || sourceTopics.length < 1) throw new IllegalArgumentException("Parameter sourceTopics does not match with any topic");
+
+        targetTopic = getEnvValue("TARGET_TOPIC",null);
+        if (targetTopic==null || "".equals(targetTopic)) throw new IllegalArgumentException("Parameter TARGET_TOPIC must be set, and must contains at least 2 topic names");
+
     }
+
 
     /**
      * Return an array of topic name according to a regex
@@ -100,14 +107,14 @@ public class MergeTopics {
      * @param sourceTopicPattern a regex pattern that allows to filter topic name
      * @return A list of topic name
      */
-    private static String[] GetSourceTopics(Properties props, String sourceTopicPattern) {
+    private static String[] getSourceTopics(Properties props, String sourceTopicPattern) {
         ArrayList<String> result=new ArrayList<String>();
 
         Pattern p = Pattern.compile(sourceTopicPattern);
 
         KafkaConsumer<String, String> consumer=null;
         try {
-            consumer = new KafkaConsumer(props);
+            consumer = new KafkaConsumer<String, String>(props);
             for (String topic : consumer.listTopics().keySet())
                 if (p.matcher(topic).matches())
                     result.add(topic);
