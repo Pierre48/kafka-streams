@@ -1,0 +1,38 @@
+{
+  "type": "record",
+  "name": "Product",
+  "namespace": "com.xxx.avro",
+  "doc": "Sample",
+  "fields": [
+    {
+              "name": "Name",
+              "type": [
+                "null",
+                {
+                  "type": "string",
+                  "avro.java.string": "String"
+                }
+              ],
+              "default": null
+       },
+    {
+              "name": "Color",
+              "type": [
+                "null",
+                {
+                  "type": "string",
+                  "avro.java.string": "String"
+                }
+              ],
+              "default": null
+       },
+    {
+              "name": "Size",
+              "type": [
+                {
+                  "type": "int",
+                  "avro.java.int": "Int"
+                }
+              ]
+       }]
+ }
