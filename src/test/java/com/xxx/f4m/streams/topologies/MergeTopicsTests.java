@@ -1,8 +1,7 @@
 package com.xxx.f4m.streams.topologies;
 
 import com.xxx.avro.Product;
-import com.xxx.f4m.streams.MergeTopicsTopology;
-import com.xxx.f4m.streams.avro.ProductSerdes;
+import com.xxx.f4m.streams.avro.ProductSerDes;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import org.apache.kafka.common.serialization.Serde;
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -48,10 +46,9 @@ public class MergeTopicsTests {
         var config = new Properties();
         config.putAll(MOCK_CONFIG);
 
-        var productSerDe = new ProductSerdes(config).purchaseOrderValueSerde;
+        var productSerDe = new ProductSerDes(config).purchaseOrderValueSerde;
 
-        String[]sourceTopics = {MOCK_SOURCE_TOPIC_1,MOCK_SOURCE_TOPIC_2,MOCK_SOURCE_TOPIC_3};
-        var topology = new MergeTopicsTopology(sourceTopics,"test").topology();
+        var topology = new MergeTopicsTopology("^test_.*$","test").topology();
 
         testDriver = new TopologyTestDriver(topology, config);
 

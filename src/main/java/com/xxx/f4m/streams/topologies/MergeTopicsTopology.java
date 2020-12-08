@@ -1,8 +1,7 @@
-package com.xxx.f4m.streams;
+package com.xxx.f4m.streams.topologies;
 
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
-import org.apache.kafka.streams.kstream.KStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,14 +12,14 @@ import java.util.regex.Pattern;
  * into a single topic
  */
 public class MergeTopicsTopology {
+    public static final Logger logger = LoggerFactory.getLogger(MergeTopicsTopology.class);
     private final String sourceTopicsPattern;
     private final String targetTopic;
-    public static final Logger logger = LoggerFactory.getLogger(MergeTopicsTopology.class);
-    public MergeTopicsTopology(String sourceTopicsPattern, String outputTopicName) {
-        this.sourceTopicsPattern = sourceTopicsPattern;
-        this.targetTopic = outputTopicName;
-    }
 
+    public MergeTopicsTopology(String sourceTopicsPattern, String targetTopic) {
+        this.sourceTopicsPattern = sourceTopicsPattern;
+        this.targetTopic = targetTopic;
+    }
     /**
      * Build the topology
      * @return The topology
@@ -31,8 +30,6 @@ public class MergeTopicsTopology {
         if (pattern.matcher(targetTopic).matches())
             throw new IllegalArgumentException("Source topic pattern match with target topic name. That is not possible (infinite loop) !");
         builder.stream(pattern).to(targetTopic);
-        final Topology topology = builder.build();
-        logger.info("Topology : " + topology.describe());
-        return topology;
+        return builder.build();
     }
 }
