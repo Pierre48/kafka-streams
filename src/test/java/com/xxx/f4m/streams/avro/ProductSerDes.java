@@ -9,11 +9,11 @@ import java.util.Properties;
 
 import static io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG;
 
-public class ProductSerdes {
+public class ProductSerDes {
 
     public final Serde<Product> purchaseOrderValueSerde;
 
-    public ProductSerdes(String registryUrl) {
+    public ProductSerDes(String registryUrl) {
         purchaseOrderValueSerde = new SpecificAvroSerde<>();
         purchaseOrderValueSerde.configure(Map.of(
                 SCHEMA_REGISTRY_URL_CONFIG, registryUrl
@@ -21,7 +21,7 @@ public class ProductSerdes {
                 false);
     }
 
-    public ProductSerdes(Properties properties) {
+    public ProductSerDes(Properties properties) {
         this((String) properties.getOrDefault(SCHEMA_REGISTRY_URL_CONFIG, "no-schema-registry"));
     }
 }
